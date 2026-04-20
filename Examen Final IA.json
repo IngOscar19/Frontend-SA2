@@ -1,0 +1,400 @@
+{
+  "name": "Examen Final",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "verificar-pago",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1040,
+        -112
+      ],
+      "id": "8a76ae9e-18ff-4fa7-82c1-16f54d5256d9",
+      "name": "Webhook",
+      "webhookId": "87713b05-65cf-47c6-a779-7077615ec2d2",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM pagos_referencia WHERE folio = '{{ $json.body.folio }}' AND usado = false",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -848,
+        -112
+      ],
+      "id": "dbcad625-8faf-42a9-ae85-0949121baa57",
+      "name": "Execute a SQL query",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "f5pRVKzHO4GVMYCw",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.valido }}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    },
+                    "id": "e3dce63d-e198-466e-951a-7c5b5d2c3755"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "249b26fd-5630-4bf1-ac7c-41b007e5897d",
+                    "leftValue": "={{ $json.valido }}",
+                    "rightValue": 0,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -368,
+        -96
+      ],
+      "id": "f86aca34-ab24-48da-9e9b-c2e4237983e7",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "http://localhost:3000/api/pagos/callback-acceso",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"email\": \"{{ $('Webhook').item.json.body.email }}\", \"estatus\": \"Aceptado\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -48,
+        -176
+      ],
+      "id": "ebe5115b-9bc6-4188-9c43-3df1da18bc39",
+      "name": "HTTP Request Valido"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "http://localhost:3000/api/pagos/callback-acceso",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"email\": \"{{ $('Webhook').item.json.body.email }}\", \"estatus\": \"Rechazado\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        16,
+        160
+      ],
+      "id": "3ebbe0aa-3741-4ccc-a359-587cb124d7e4",
+      "name": "HTTP Request Invalido"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.email }}",
+        "subject": "=Acceso confirmado",
+        "message": "=<div style=\"font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #e2e8f0; background-image: linear-gradient(135deg, #e2e8f0 0%, #edf2f7 100%); padding: 50px 15px; color: #4a5568; line-height: 1.6;\">\n  \n  <div style=\"max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1);\">\n    \n    <div style=\"background-color: #0056b3; background-image: linear-gradient(135deg, #0056b3 0%, #007bff 100%); color: #ffffff; padding: 40px 20px; text-align: center;\">\n      <div style=\"font-size: 40px; margin-bottom: 10px;\"></div>\n      <h2 style=\"margin: 0; font-size: 28px; font-weight: 800; letter-spacing: 0.5px;\">¡Bienvenido!</h2>\n    </div>\n    \n    <div style=\"padding: 40px 30px;\">\n      \n      <p style=\"font-size: 16px; margin-top: 0; text-align: center; color: #2d3748;\">\n        Tu registro ha sido procesado y tu folio ha sido <strong>verificado correctamente</strong>.\n      </p>\n      \n      <div style=\"text-align: center; margin: 35px 0;\">\n        <p style=\"font-size: 16px; margin-bottom: 15px; color: #718096;\">Estado de tu acceso:</p>\n        <span style=\"display: inline-block; background-color: #def7ec; color: #03543f; border: 1px solid #84e1bc; padding: 8px 20px; border-radius: 50px; font-weight: 800; font-size: 16px; letter-spacing: 1px;\">\n          ✓ APROBADO\n        </span>\n      </div>\n      \n      <div style=\"background-color: #fffbeb; border: 1px solid #fef08a; border-left: 5px solid #f59e0b; padding: 15px 20px; border-radius: 8px; margin-bottom: 30px;\">\n        <p style=\"margin: 0; font-size: 15px; color: #92400e;\">\n          <strong>⚠️ Importante:</strong> Recuerda usar tu <strong>correo institucional</strong> para validar tu identidad.\n        </p>\n      </div>\n      \n      <p style=\"font-size: 20px; font-weight: bold; text-align: center; color: #0056b3; margin: 0;\">\n        ¡Te esperamos!\n      </p>\n      \n    </div>\n\n    <div style=\"background-color: #f7fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;\">\n      <p style=\"margin: 0; font-size: 12px; color: #a0aec0;\">\n        Este es un correo automático, por favor no respondas a este mensaje.<br>\n        Si tienes problemas, contacta al soporte técnico del evento.\n      </p>\n    </div>\n\n  </div>\n</div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        304,
+        -176
+      ],
+      "id": "14f31e9c-e070-4a9c-aa23-6a2a321ec6c5",
+      "name": "Send a message",
+      "webhookId": "d62a704c-bf98-4604-8843-cd8e20ddd4eb",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "8ye00MuhSHzOrLOC",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.email }}",
+        "subject": "Acceso denegado",
+        "message": "=<div style=\"font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #e2e8f0; background-image: linear-gradient(135deg, #e2e8f0 0%, #edf2f7 100%); padding: 50px 15px; color: #4a5568; line-height: 1.6;\">\n  \n  <div style=\"max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1);\">\n    \n    <div style=\"background-color: #c53030; background-image: linear-gradient(135deg, #c53030 0%, #e53e3e 100%); color: #ffffff; padding: 40px 20px; text-align: center;\">\n      <div style=\"font-size: 40px; margin-bottom: 10px;\">🚫</div>\n      <h2 style=\"margin: 0; font-size: 28px; font-weight: 800; letter-spacing: 0.5px;\">Acceso Denegado</h2>\n    </div>\n    \n    <div style=\"padding: 40px 30px;\">\n      \n      <p style=\"font-size: 16px; margin-top: 0; text-align: center; color: #2d3748;\">\n        Lo sentimos, <strong>no pudimos verificar</strong> tu folio de pago.\n      </p>\n      \n      <div style=\"text-align: center; margin: 30px 0;\">\n        <span style=\"display: inline-block; background-color: #fde8e8; color: #9b1c1c; border: 1px solid #f8b4b4; padding: 8px 20px; border-radius: 50px; font-weight: 800; font-size: 16px; letter-spacing: 1px;\">\n          ❌ NO VÁLIDO\n        </span>\n      </div>\n      \n      <div style=\"background-color: #fff5f5; border: 1px solid #fed7d7; border-left: 5px solid #e53e3e; padding: 20px; margin: 30px 0; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);\">\n        <p style=\"margin: 0; font-size: 16px; color: #c53030; text-align: center;\">\n          El folio ingresado <strong>no es válido</strong> o ya fue utilizado previamente.\n        </p>\n      </div>\n      \n      <div style=\"background-color: #ebf8ff; border: 1px solid #bee3f8; border-left: 5px solid #3182ce; padding: 15px 20px; border-radius: 8px; margin-bottom: 10px;\">\n        <p style=\"margin: 0; font-size: 15px; color: #2b6cb0;\">\n          <strong>¿Necesitas ayuda?</strong> Si crees que esto es un error, por favor contacta a los organizadores para revisar tu situación.\n        </p>\n      </div>\n      \n    </div>\n\n    <div style=\"background-color: #f7fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;\">\n      <p style=\"margin: 0; font-size: 12px; color: #a0aec0;\">\n        Este es un correo automático, por favor no respondas a este mensaje.<br>\n        Si tienes problemas, contacta al soporte técnico del evento.\n      </p>\n    </div>\n\n  </div>\n</div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        144
+      ],
+      "id": "4b2bd5ba-c49d-4824-b534-a5132d11ad34",
+      "name": "Send a message1",
+      "webhookId": "f0709463-882b-4657-8df2-d5c77110c17b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "8ye00MuhSHzOrLOC",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst found = items.length > 0 && items[0].json.id !== undefined;\n\nreturn [{\n  json: {\n    valido: found ? 1 : 0\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -624,
+        -112
+      ],
+      "id": "4aabff44-7b4f-4b48-9e18-9039b2fdf234",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE pagos_referencia SET usado = true WHERE folio = '{{ $('Webhook').item.json.body.folio }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        128,
+        -176
+      ],
+      "id": "9a104439-6543-4231-9dbb-634dae23aa40",
+      "name": "Execute a SQL query1",
+      "credentials": {
+        "postgres": {
+          "id": "f5pRVKzHO4GVMYCw",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "Flujo para actualizar la solicitud Aprobada y mandar un correo de Acceso Confirmado",
+        "height": 320,
+        "width": 528,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        -336
+      ],
+      "id": "f993ede6-6c96-436d-820e-b2abca638fcc",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "Flujo para mandar un correo de Acceso Rechazado",
+        "height": 320,
+        "width": 528,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        80
+      ],
+      "id": "decd4763-c0ee-4702-8771-951e97fda6df",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "Manda la respuesta de la consulta al flujo correspondiente",
+        "height": 256,
+        "color": "#BBA830"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        -176
+      ],
+      "id": "b4ef9f17-3562-422b-b9bf-090222bb23ff",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "Verifica y busca el folio recibido en la Base de datos para ver si esta disponible y no esta usado",
+        "height": 256,
+        "width": 208,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -896,
+        -208
+      ],
+      "id": "e88ce288-f53f-4f19-869b-c404cdf5d902",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "Interpreta si el folio es valido o no",
+        "height": 256,
+        "width": 176,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -656,
+        -208
+      ],
+      "id": "00055b32-1f0a-4bff-80a9-b6419fd1e258",
+      "name": "Sticky Note4"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request Valido",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request Invalido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request Valido": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request Invalido": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query1": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "da70b8f7-fe50-40e8-940f-f25e88c5bf52",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b897d57e97edb16253359acfdf4cd869b88d6a7ee6273e912ced5da798bf8538"
+  },
+  "id": "SpApPyDSbeLc1ucs",
+  "tags": []
+}
